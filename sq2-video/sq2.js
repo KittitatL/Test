@@ -1,8 +1,8 @@
-// "Introducing Opus SQ²" — hand-drawn canvas animation starring Qumi.
+// "Introducing SQ²" — hand-drawn canvas animation starring Qumi.
 // Every frame is a pure function of the frame number, so render.js can
 // capture it deterministically. Open index.html in a browser to preview.
 
-const W = 1920, H = 1080, FPS = 24, DUR = 30, FRAMES = FPS * DUR;
+const W = 1920, H = 1080, FPS = 60, DUR = 30, FRAMES = FPS * DUR;
 const cv = document.getElementById('c');
 const ctx = cv.getContext('2d');
 
@@ -357,7 +357,7 @@ function guides(p, alpha = 0.12) {
 // SCENES — t: drawing time (on twos), c: camera time (every frame), both local
 // ======================================================================
 
-// 0.0 – 2.5  Qumi drops in: INTRODUCING / OPUS SQ²
+// 0.0 – 2.5  Qumi drops in: INTRODUCING / SQ²
 function sIntro(t, c) {
   bg(C.bg);
   const zin = seg(c, 2.15, 2.5);
@@ -384,16 +384,14 @@ function sIntro(t, c) {
   const tx = 820;
   txt('INTRODUCING', tx, 470, 118, { align: 'left', reveal: seg(t, 1.0, 1.72) * 11 + 0.001, shadow: C.pink, cursor: t < 1.85 && t > 0.9 });
   scribble(tx, tx + 790, 500, seg(t, 1.72, 1.9), C.yellow, 7);
-  // OPUS SQ² slam
+  // SQ² slam
   if (t >= 1.85) {
     const s = lerp(2.4, 1, eBack(seg(t, 1.85, 2.05)));
-    ctx.save(); ctx.translate(tx, 690); ctx.scale(s, s); ctx.rotate(-0.03 * (1 - seg(t, 1.85, 2.1)));
-    let x = 0;
-    x += txt('OPUS ', x, 0, 180, { align: 'left', color: C.ink, shadow: '#000' });
-    x += txt('SQ', x, 0, 180, { align: 'left', color: C.pink, shadow: '#000' });
-    txt('2', x + 8, -85, 100, { align: 'left', color: C.yellow, shadow: '#000' });
+    ctx.save(); ctx.translate(tx, 720); ctx.scale(s, s); ctx.rotate(-0.03 * (1 - seg(t, 1.85, 2.1)));
+    const x = txt('SQ', 0, 0, 230, { align: 'left', color: C.pink, shadow: '#000' });
+    txt('2', x + 10, -110, 130, { align: 'left', color: C.yellow, shadow: '#000' });
     ctx.restore();
-    burst(tx + 480, 630, 260, seg(t, 1.85, 2.15), C.pink, 14, 8);
+    burst(tx + 200, 640, 260, seg(t, 1.85, 2.15), C.pink, 14, 8);
   }
 }
 
@@ -504,8 +502,13 @@ const ORGS = [
 ];
 const PLACES = [ // lon, lat, name, kind (p = partner org, s = SQST 2026 speaker)
   [139.7, 35.7, 'JAPAN', 'p'], [127.4, 36.4, 'KOREA', 'p'], [-121.9, 37.3, 'USA', 'p'],
-  [6.6, 46.5, 'SWITZERLAND', 's'], [24.9, 60.2, 'FINLAND', 's'], [103.8, 1.35, 'SINGAPORE', 's'], [-114, 51, 'CANADA', 's'],
+  [6.6, 46.5, 'SWITZERLAND', 's'], [24.9, 60.2, 'FINLAND', 's'], [103.8, 1.35, 'SINGAPORE', 's', 300, 200], [-114, 51, 'CANADA', 's'],
 ];
+// label offsets from each dot, chosen so the landed Qumis never cover a name
+const LABEL_AT = {
+  JAPAN: [70, -92], KOREA: [-70, -92], USA: [0, 52], CANADA: [0, -92],
+  SWITZERLAND: [-150, 10], FINLAND: [-110, 10], SINGAPORE: [0, 52],
+};
 function sNetwork(t, c) {
   bg(C.bg);
   if (t < 2.9) {
@@ -561,8 +564,9 @@ function sNetwork(t, c) {
     const gp = eOut(seg(k, 0, 0.5));
     for (const lat of [-30, 0, 30, 60]) sLine(80, Y(lat), 1840, Y(lat) + 2, { color: 'rgba(244,236,220,0.13)', w: 2, prog: gp, passes: 1, dash: [6, 16] });
     for (let lon = -170; lon <= 190; lon += 30) sLine(X(lon + 100), Y(75), X(lon + 100), Y(-45), { color: 'rgba(244,236,220,0.08)', w: 2, prog: gp, passes: 1 });
-    PLACES.forEach(([lon, lat, name, kind], i) => {
-      const ti = 0.25 + i * 0.13, x = X(lon), y = Y(lat);
+    const riders = [];
+    PLACES.forEach(([lon, lat, name, kind, ox = 0, oy = 0], i) => {
+      const ti = 0.25 + i * 0.12, x = X(lon) + ox, y = Y(lat) + oy;
       const mx = (THX + x) / 2, my = (THY + y) / 2 - Math.abs(x - THX) * 0.28 - 60;
       const pts = []; for (let s = 0; s <= 24; s++) { const u = s / 24; pts.push([(1 - u) * (1 - u) * THX + 2 * u * (1 - u) * mx + u * u * x, (1 - u) * (1 - u) * THY + 2 * u * (1 - u) * my + u * u * y]); }
       const col = kind === 'p' ? C.pink : C.yellow;
@@ -572,17 +576,21 @@ function sNetwork(t, c) {
         ctx.fillStyle = C.ink; ctx.fillRect(q[0] - 5, q[1] - 5, 10, 10);
         blob(x, y, 11, col);
         const s = eBack(seg(k, ti + 0.35, ti + 0.55));
-        const lx = name === 'KOREA' ? -70 : name === 'JAPAN' ? 70 : 0;
-        ctx.save(); ctx.translate(x + lx, y + (lat < 20 ? 52 : -26)); ctx.scale(s, s); txt(name, 0, 0, 30, { color: col }); ctx.restore();
+        const [lx, ly] = LABEL_AT[name];
+        ctx.save(); ctx.translate(x + lx, y + ly); ctx.scale(s, s); txt(name, 0, 0, 30, { color: col }); ctx.restore();
       }
+      riders.push([pts, seg(k, ti + 0.3, ti + 1.1), x < THX, i]);
     });
-    // Qumi rides the arc to the USA
+    // a small Qumi rides every path out of Thailand
+    for (const [pts, p, left, i] of riders) {
+      if (p <= 0) continue;
+      const u = eIO(p) * 24, a = Math.min(23, Math.floor(u)), f = u - a;
+      const qx = lerp(pts[a][0], pts[a + 1][0], f), qy = lerp(pts[a][1], pts[a + 1][1], f);
+      const hop = p >= 1 ? Math.abs(Math.sin(k * 9 + i)) * 10 : 0;
+      qumi(qx, qy - hop, 0.85, { rot: p < 1 ? Math.atan2(pts[a + 1][1] - pts[a][1], pts[a + 1][0] - pts[a][0]) * 0.35 * (left ? -1 : 1) + (left ? 0.2 : -0.2) : 0, flip: left, j: 0.5 });
+    }
     blob(THX, THY, 16, C.pink); sCircle(THX, THY, 34 + Math.sin(k * 10) * 6, { color: C.pink, w: 3, passes: 1 });
     txt('THAILAND', THX, THY + 70, 34, { color: C.ink });
-    const us = PLACES[2], ux = X(us[0]), uy = Y(us[1]), umx = (THX + ux) / 2, umy = (THY + uy) / 2 - Math.abs(ux - THX) * 0.28 - 60;
-    const u = eIO(seg(k, 0.6, 1.9));
-    const qx = (1 - u) * (1 - u) * THX + 2 * u * (1 - u) * umx + u * u * ux, qy = (1 - u) * (1 - u) * THY + 2 * u * (1 - u) * umy + u * u * uy;
-    qumi(qx, qy, 1.5, { rot: (u - 0.5) * -1.2, flip: true });
     screen();
     const tp = seg(k, 0.2, 0.4);
     if (tp > 0) { ctx.save(); ctx.translate(960, 120); ctx.scale(eBack(tp), eBack(tp)); txt('THAILAND × THE WORLD', 0, 0, 76, { shadow: C.pink }); ctx.restore(); }
@@ -773,8 +781,8 @@ SHAKE = [
 function renderFrame(f) {
   _id = 0;
   TG = f / FPS;
-  const td = Math.floor(f / 2) * 2 / FPS;     // drawings on twos
-  BOIL = Math.floor(f / 2);
+  const td = TG;                               // motion at full 60 fps
+  BOIL = Math.floor(TG * 12);                  // line boil stays at 12 fps (hand-drawn texture)
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
   const sc = SCENES.find(s => TG < s[1]) || SCENES[SCENES.length - 1];
   sc[2](Math.max(0, td - sc[0]), TG - sc[0]);
@@ -790,7 +798,7 @@ window.READY = (async () => {
   ]);
   makeGrain();
   window.renderFrame = renderFrame;
-  window.FRAMES = FRAMES;
+  window.FRAMES = FRAMES; window.FPS = FPS;
   if (!/render/.test(location.search)) {        // live preview in a browser
     const t0 = performance.now();
     const loop = () => { renderFrame(Math.floor((performance.now() - t0) / 1000 * FPS) % FRAMES); requestAnimationFrame(loop); };

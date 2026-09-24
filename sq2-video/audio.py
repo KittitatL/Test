@@ -1,4 +1,4 @@
-"""8-bit soundtrack for "Introducing Opus SQ²" — synthesised from scratch with numpy.
+"""8-bit soundtrack for "Introducing SQ²" — synthesised from scratch with numpy.
 
 Music: 120 BPM chiptune (A minor: Am-F-C-G), square-wave arps, pulse bass,
 noise drums. SFX are placed on the same timeline as sq2.js so every slam,
